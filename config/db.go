@@ -25,7 +25,7 @@ func ConnectDB() {
 	}
 
 	// Perbaiki dari model.Event menjadi models.Event
-	err = DB.AutoMigrate(&models.Event{})
+	err = DB.AutoMigrate(&models.Event{}, &models.User{})
 	if err != nil {
 		log.Fatal("Gagal melakukan migrasi database: ", err)
 	}

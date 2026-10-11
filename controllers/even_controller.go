@@ -53,3 +53,50 @@ func GetEventById(context *gin.Context) {
 		"event":   events,
 	})
 }
+func UpdateEvent(context *gin.Context) {
+	var event models.Event
+	paramsId := context.Param("id")
+	if paramsId == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID is required",
+		})
+		return
+	}
+	var evenData = config.DB.First(&event, paramsId).Error
+	if evenData != nil {
+		context.JSON(http.StatusNotFound, gin.H{
+			"error": "Data Tidak Ditemukan",
+		})
+		return
+	}
+	var updatedEvent models.Event
+	err := context.ShouldBindJSON(&updatedEvent)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	config.DB.Model(&event).Updates(updatedEvent)
+	context.JSON(http.StatusOK, gin.H{
+		"message": "Data berhasil di update",
+		"event":   event,
+	})
+
+}
+func DeleteEvent(context *gin.Context) {
+	var event models.Event
+	paramsId := context.Param("id")
+	if paramsId == "" {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"errorparameter": "ID is required",
+		})
+		return
+	}
+	//config.DB.Delete(&event, paramsId)// soft delete karena menggunakan gorm.Model
+	config.DB.Unscoped().Delete(&event, paramsId) // hard delete
+	context.JSON(http.StatusOK, gin.H{
+		"message": "Data berhasil di delete",
+	})
+
+}

@@ -23,6 +23,8 @@ func main() {
 		api.GET("/events", controllers.GetEvent)
 		api.POST("/events", controllers.CreateEvent)
 		api.GET("/events/:id", controllers.GetEventById)
+		api.PUT("/events/:id", controllers.UpdateEvent)
+		api.DELETE("/events/:id", controllers.DeleteEvent)
 	}
 
 	// route
