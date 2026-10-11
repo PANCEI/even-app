@@ -2,11 +2,14 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"even.com/even-app/config"
 	"even.com/even-app/models"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -71,5 +74,57 @@ func Register(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{
 		"message": "User berhasil dibuat",
 		"user":    user,
+	})
+}
+func Login(context *gin.Context) {
+	var input LoginInput
+	if err := context.ShouldBindJSON(&input); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Ambil data user dari database berdasarkan email
+	var user models.User
+	errUser := config.DB.Where("email = ?", input.Email).First(&user).Error
+	if errUser != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{
+			"error": "email yang di masukan belum terdaftar",
+		})
+		return
+	}
+
+	// Bandingkan password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{
+			"error": "password yang di masukan salah",
+		})
+		return
+	}
+
+	// 1. Buat klaim token JWT (tambahkan waktu kedaluwarsa agar lebih aman)
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Token berlaku 24 jam
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// 2. Tentukan secret key (sebaiknya simpan di file .env nantinya)
+
+	// 3. Sign token menjadi string
+	tokenString, errToken := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if errToken != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Gagal menghasilkan token",
+		})
+		return
+	}
+
+	// 4. Kirim token kembali ke client
+	context.JSON(http.StatusOK, gin.H{
+		"message": "Login berhasil",
+		"token":   tokenString,
 	})
 }

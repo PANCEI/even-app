@@ -27,6 +27,7 @@ func main() {
 		api.DELETE("/events/:id", controllers.DeleteEvent)
 
 		api.POST("/register", controllers.Register)
+		api.POST("/login", controllers.Login)
 	}
 
 	// route
