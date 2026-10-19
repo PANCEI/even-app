@@ -126,5 +126,43 @@ func Login(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{
 		"message": "Login berhasil",
 		"token":   tokenString,
+		"user": gin.H{
+			"id":     user.ID,
+			"nama":   user.Name,
+			"email":  user.Email,
+			"events": user.Events,
+		},
+	})
+}
+
+func GetUserData(context *gin.Context) {
+	// 1. Ambil user id dari context (pastikan key-nya sama persis dengan di middleware: "UserID")
+	userId, exists := context.Get("userId")
+	if !exists {
+		context.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Tidak Terautentikasi",
+		})
+		return
+	}
+
+	var user models.User
+
+	// 2. Query ke database menggunakan GORM dan tangkap error-nya dengan benar
+	err := config.DB.Select("id", "name", "email").First(&user, userId).Error
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{
+			"error": "User tidak ditemukan",
+		})
+		return
+	}
+
+	// 3. Kirim respons sukses jika user ditemukan
+	context.JSON(http.StatusOK, gin.H{
+		"message": "Berhasil mengambil data user",
+		"user": gin.H{
+			"id":    user.ID,
+			"name":  user.Name,
+			"email": user.Email,
+		},
 	})
 }

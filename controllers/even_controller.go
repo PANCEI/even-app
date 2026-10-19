@@ -9,6 +9,7 @@ import (
 )
 
 func CreateEvent(context *gin.Context) {
+	userId := context.GetInt("userId")
 	var event models.Event
 	err := context.ShouldBindJSON(&event)
 	if err != nil {
@@ -17,7 +18,7 @@ func CreateEvent(context *gin.Context) {
 		})
 		return
 	}
-	event.UserId = 1
+	event.UserId = userId
 	config.DB.Create(&event)
 	context.JSON(http.StatusCreated, gin.H{
 		"message": "Data berhasil di buat",
@@ -54,6 +55,7 @@ func GetEventById(context *gin.Context) {
 	})
 }
 func UpdateEvent(context *gin.Context) {
+	userId := context.GetInt("userId")
 	var event models.Event
 	paramsId := context.Param("id")
 	if paramsId == "" {
@@ -66,6 +68,12 @@ func UpdateEvent(context *gin.Context) {
 	if evenData != nil {
 		context.JSON(http.StatusNotFound, gin.H{
 			"error": "Data Tidak Ditemukan",
+		})
+		return
+	}
+	if event.UserId != userId {
+		context.JSON(http.StatusForbidden, gin.H{
+			"error": "Anda Tidak Memiliki Akses Untuk Mengubah Data Ini",
 		})
 		return
 	}
@@ -85,11 +93,25 @@ func UpdateEvent(context *gin.Context) {
 
 }
 func DeleteEvent(context *gin.Context) {
+	userId := context.GetInt("userId")
 	var event models.Event
 	paramsId := context.Param("id")
 	if paramsId == "" {
 		context.JSON(http.StatusBadRequest, gin.H{
 			"errorparameter": "ID is required",
+		})
+		return
+	}
+	var evenData = config.DB.First(&event, paramsId).Error
+	if evenData != nil {
+		context.JSON(http.StatusNotFound, gin.H{
+			"error": "Data Tidak Ditemukan",
+		})
+		return
+	}
+	if event.UserId != userId {
+		context.JSON(http.StatusForbidden, gin.H{
+			"error": "Anda Tidak Memiliki Akses Untuk Mengubah Data Ini",
 		})
 		return
 	}

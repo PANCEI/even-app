@@ -5,6 +5,7 @@ import (
 
 	"even.com/even-app/config"
 	"even.com/even-app/controllers"
+	"even.com/even-app/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -21,13 +22,19 @@ func main() {
 	api := server.Group("/api")
 	{
 		api.GET("/events", controllers.GetEvent)
-		api.POST("/events", controllers.CreateEvent)
-		api.GET("/events/:id", controllers.GetEventById)
-		api.PUT("/events/:id", controllers.UpdateEvent)
-		api.DELETE("/events/:id", controllers.DeleteEvent)
 
 		api.POST("/register", controllers.Register)
 		api.POST("/login", controllers.Login)
+
+		protected := api.Group("/")
+		protected.Use(middleware.RequiredAuth())
+		{
+			protected.GET("/auth/me", controllers.GetUserData)
+			protected.POST("/events", controllers.CreateEvent)
+			protected.GET("/events/:id", controllers.GetEventById)
+			protected.PUT("/events/:id", controllers.UpdateEvent)
+			protected.DELETE("/events/:id", controllers.DeleteEvent)
+		}
 	}
 
 	// route
